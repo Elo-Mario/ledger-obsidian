@@ -91,6 +91,7 @@ export interface Transaction {
     check?: number;
     comment?: string;
     date: string;
+    reconcile?: '' | '*' | '!';
     payee: string;
     expenselines: (Expenseline | Commentline)[];
   };
@@ -104,6 +105,7 @@ export interface EnhancedTransaction {
     check?: number;
     comment?: string;
     date: string;
+    reconcile?: '' | '*' | '!';
     payee: string;
     expenselines: (EnhancedExpenseLine | Commentline)[];
   };
@@ -236,7 +238,6 @@ export const parse = (
           },
         };
       } catch (error) {
-        console.log(tx);
         console.error(error);
       }
     })

@@ -461,6 +461,44 @@ describe('parsing a ledger file', () => {
       expect(txCache.transactions).toHaveLength(1);
       expect(txCache.transactions[0]).toEqual(expected);
     });
+    test('date line reconcile marker is parsed', () => {
+      const contents = `2021/04/20 * Obsidian
+      e:Spending Money    $20.00
+      b:CreditUnion       $-20.00`;
+      const txCache = parse(contents, settings);
+      const expected: EnhancedTransaction = {
+        type: 'tx',
+        blockLine: 1,
+        block: {
+          firstLine: 0,
+          lastLine: 2,
+          block: contents,
+        },
+        value: {
+          date: '2021/04/20',
+          reconcile: '*',
+          payee: 'Obsidian',
+          expenselines: [
+            {
+              account: 'e:Spending Money',
+              dealiasedAccount: 'e:Spending Money',
+              amount: 20,
+              currency: '$',
+              reconcile: '',
+            },
+            {
+              account: 'b:CreditUnion',
+              dealiasedAccount: 'b:CreditUnion',
+              amount: -20,
+              currency: '$',
+              reconcile: '',
+            },
+          ],
+        },
+      };
+      expect(txCache.transactions).toHaveLength(1);
+      expect(txCache.transactions[0]).toEqual(expected);
+    });
     test('Comments are preserved', () => {
       const contents = `2021/04/20 Obsidian ; testing
       e:Spending Money    $20.00 ; a comment

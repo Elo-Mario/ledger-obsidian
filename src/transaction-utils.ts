@@ -213,3 +213,39 @@ export const sortAccountTree = (nodes: Node[]): void => {
     }
   });
 };
+
+/**
+ * hasUnreconciledLines checks if a transaction has any unreconciled expense lines.
+ * A line is considered unreconciled if it doesn't have a reconcile mark ('*' or '!').
+ */
+export const hasUnreconciledLines = (tx: EnhancedTransaction): boolean => {
+  return tx.value.expenselines.some((line) => {
+    if (!('account' in line)) {
+      return false; // Comment lines don't count
+    }
+    // Check if reconcile mark is missing or empty
+    return !line.reconcile || line.reconcile.trim() === '';
+  });
+};
+
+/**
+ * markAsReconciled creates a new transaction with all expense lines marked as reconciled ('*').
+ * Returns a new transaction object without mutating the original.
+ */
+export const markAsReconciled = (tx: EnhancedTransaction): EnhancedTransaction => {
+  return {
+    ...tx,
+    value: {
+      ...tx.value,
+      expenselines: tx.value.expenselines.map((line) => {
+        if (!('account' in line)) {
+          return line; // Keep comment lines as they are
+        }
+        return {
+          ...line,
+          reconcile: '*', // Mark as reconciled
+        };
+      }),
+    },
+  };
+};

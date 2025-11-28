@@ -6,9 +6,12 @@ import { Interval } from '../date-utils';
 import { LedgerModifier } from '../file-interface';
 import type { TransactionCache } from '../parser';
 import { ISettings } from '../settings';
+import { ReconcileModal } from '../reconcile-modal';
+
 import { AccountsList } from './AccountsList';
 import { AccountVisualization } from './AccountVisualization';
 import { DateRangeSelector } from './DateRangeSelector';
+import { FinancialReport } from './FinancialReport';
 import { NetWorthVisualization } from './NetWorthVisualization';
 import { ParseErrors } from './ParseErrors';
 import {
@@ -63,14 +66,6 @@ const MobileDashboard: React.FC<{
 }> = (props): JSX.Element => {
   const [selectedTab, setSelectedTab] = React.useState('transactions');
 
-  /*
-  return (
-    <MobileTransactionList
-      currencySymbol={props.settings.currencySymbol}
-      txCache={props.txCache}
-    />
-  );
-  */
   return <p>Dashboard not yet supported on mobile.</p>;
 };
 
@@ -99,6 +94,17 @@ const DesktopDashboard: React.FC<{
   );
   const [endDate, setEndDate] = React.useState(window.moment());
   const [interval, setInterval] = React.useState<Interval>('week');
+  const [showReport, setShowReport] = React.useState(false);
+
+  if (showReport) {
+    return (
+      <FinancialReport
+        txCache={props.txCache}
+        settings={props.settings}
+        updater={props.updater}
+      />
+    );
+  }
 
   return (
     <>
@@ -111,7 +117,6 @@ const DesktopDashboard: React.FC<{
           interval={interval}
           setInterval={setInterval}
         />
-
       </Header>
 
       <FlexContainer>
@@ -121,7 +126,42 @@ const DesktopDashboard: React.FC<{
             settings={props.settings}
             selectedAccounts={selectedAccounts}
             setSelectedAccounts={setSelectedAccounts}
-          />
+          >
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  new ReconcileModal((props.updater as any).plugin).open();
+                }}
+                style={{
+                  padding: '8px 12px',
+                  background: 'var(--interactive-accent)',
+                  color: 'var(--text-on-accent)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  width: '100%',
+                }}
+              >
+                对账
+              </button>
+              <button
+                onClick={() => setShowReport(true)}
+                style={{
+                  padding: '8px 12px',
+                  background: 'var(--interactive-accent)',
+                  color: 'var(--text-on-accent)',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  width: '100%',
+                }}
+              >
+                财务报表
+              </button>
+            </div>
+          </AccountsList>
         </FlexSidebar>
         <FlexMainContent>
           {props.txCache.parsingErrors.length > 0 ? (
@@ -173,5 +213,3 @@ const DesktopDashboard: React.FC<{
     </>
   );
 };
-
-

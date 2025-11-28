@@ -4,6 +4,8 @@ import { LedgerView, LedgerViewType } from './ledgerview';
 import type { TransactionCache } from './parser';
 import { ISettings, settingsWithDefaults } from './settings';
 import { SettingsTab } from './settings-tab';
+import { ReconcileModal } from './reconcile-modal';
+
 import type { default as MomentType } from 'moment';
 import { around } from 'monkey-around';
 import {
@@ -38,7 +40,6 @@ export default class LedgerPlugin extends Plugin {
   private txCacheSubscriptions: ((txCache: TransactionCache) => void)[];
 
   public async onload(): Promise<void> {
-    console.log('ledger: Loading plugin v' + this.manifest.version);
 
     this.txCacheSubscriptions = [];
 
@@ -67,25 +68,6 @@ export default class LedgerPlugin extends Plugin {
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
-    /*
-    let addedOnce = false;
-    this.register(
-      around(MarkdownView.prototype, {
-        addAction(next) {
-          return function (icon, title, callback) {
-            console.log('Add actions called: ' + title);
-            if (!addedOnce) {
-              addedOnce = true;
-              this.addAction('ledger', 'testing', () => {
-                console.log('clicked!');
-              });
-            }
-            return next.call(icon, title, callback);
-          };
-        },
-      }),
-    );
-    */
     this.register(
       around(MarkdownView.prototype, {
         onMoreOptionsMenu(next) {
@@ -130,7 +112,14 @@ export default class LedgerPlugin extends Plugin {
       callback: this.openLedgerDashboard,
     });
 
-
+    this.addCommand({
+      id: 'ledger-reconcile',
+      name: 't:Reconcile Transactions',
+      icon: 'check-circle',
+      callback: () => {
+        new ReconcileModal(this).open();
+      },
+    });
 
     this.app.workspace.onLayoutReady(() => {
       this.updateTransactionCache();
@@ -170,6 +159,14 @@ export default class LedgerPlugin extends Plugin {
       await this.updateTransactionCache();
     }
     return ledgerTFile;
+  };
+
+  /**
+   * reloadCache manually triggers a transaction cache update.
+   * Useful after making changes to the ledger file.
+   */
+  public readonly reloadCache = async (): Promise<void> => {
+    await this.updateTransactionCache();
   };
 
   private async loadSettings(): Promise<void> {

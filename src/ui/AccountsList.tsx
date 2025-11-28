@@ -149,6 +149,7 @@ export const AccountsList: React.FC<{
           setSelectedAccounts={props.setSelectedAccounts}
         />
       ))}
+      {props.children}
     </div>
   );
 };

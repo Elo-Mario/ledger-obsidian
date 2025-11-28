@@ -2,7 +2,8 @@ import LedgerPlugin from './main';
 import { AddExpenseModal, Operation } from './modals';
 import { EnhancedTransaction, parse, TransactionCache } from './parser';
 import type { ISettings } from './settings';
-import type { MetadataCache, TFile, Vault } from 'obsidian';
+import type { MetadataCache, Vault } from 'obsidian';
+import { TFile } from 'obsidian';
 
 export class LedgerModifier {
   private readonly plugin: LedgerPlugin;
@@ -66,7 +67,16 @@ export const getTransactionCache = async (
   ledgerFilePath: string,
 ): Promise<TransactionCache> => {
   const file = cache.getFirstLinkpathDest(ledgerFilePath, '');
+
   if (!file) {
+    // 尝试直接使用vault.getAbstractFileByPath
+    const directFile = vault.getAbstractFileByPath(ledgerFilePath);
+
+    if (directFile && directFile instanceof TFile) {
+      const fileContents = await vault.read(directFile);
+      return parse(fileContents, settings);
+    }
+
     throw new Error('Ledger: Unable to find Ledger file to parse');
   }
 

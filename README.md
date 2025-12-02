@@ -13,19 +13,30 @@
   - 可视化图表展示账户余额、盈亏、净资产等
   - 支持日视图、周视图、月视图
   - 交互式图表，支持悬停查看详细信息
-- [x] 对账功能
-  - 标记交易为已对账状态
-  - 快速查看未对账交易
+- [x] 流水核对功能
+  - 标记交易为已核对状态
+  - 快速查看未核对流水
   - 自动更新 Ledger 文件
 
 ## 更新日志
 
+### 0.4.7 (2025-12-02)
+- **桑基图重构**：
+    - **会计配平**：新增"结余"（盈余）和"存量消耗"（赤字）节点，确保图表左右高度一致。
+    - **视觉优化**：实现节点和连线按金额降序排列，优化对齐方式和配色方案。
+    - **Bug修复**：修复了零收入场景下连接丢失的问题。
+- **修复**：彻底修复了 Moment.js 日期解析警告。
+
+### 0.4.6 (2025-12-02)
+- **文案优化**：将"对账"相关术语统一更新为"流水核对"，表述更准确。
+- **代码优化**：清理调试日志，修复 TypeScript 类型错误，提升代码质量。
+
 ### 0.4.5 (2025-11-28)
-- **新增对账功能**：
-    - 新增"对账交易"命令，可从命令面板快速打开对账界面
-    - 在仪表板中添加"对账"按钮，方便进行账户对账
-    - 支持批量选择待对账交易并标记为已对账
-    - 自动在交易日期后添加 `*` 标记表示已对账
+- **新增流水核对功能**：
+    - 新增"流水核对"命令，可从命令面板快速打开核对界面
+    - 在仪表板中添加"流水核对"按钮，方便进行账户核对
+    - 支持批量选择待核对流水并标记为已核对
+    - 自动在交易日期后添加 `*` 标记表示已核对
 - **新增财务报表功能**：
     - 添加"打开财务报表"按钮，展示详细的财务图表
     - 支持查看账户余额、收支情况、净资产变化趋势
@@ -64,9 +75,9 @@
 在当前窗口中打开 Ledger 仪表板。仪表板将显示在设置中配置的默认 Ledger 文件中的交易。
 您也可以在文件浏览器中点击任何 `.ledger` 文件，在仪表板中查看该文件。
 
-**对账交易 (Reconcile Transactions)**
+**流水核对 (Reconcile Transactions)**
 
-打开对账界面，显示所有未对账的交易。您可以选择交易并标记为已对账，系统会自动在 Ledger 文件中添加对账标记。
+打开核对界面，显示所有未核对的流水。您可以选择交易并标记为已核对，系统会自动在 Ledger 文件中添加核对标记。
 
 **重置账本教程进度 (Reset Ledger Tutorial progress)**
 
@@ -79,11 +90,3 @@
 ![添加交易到账本](https://raw.githubusercontent.com/tgrosinger/ledger-obsidian/main/resources/screenshots/add-to-ledger.png)
 
 ![从移动设备添加交易](https://raw.githubusercontent.com/tgrosinger/ledger-obsidian/main/resources/screenshots/mobile-add-expense.png)
-
-## 支持
-
-此插件目前免费提供，但在功能完善后可能会成为付费插件。如果您想表示感谢或帮助支持持续开发，欢迎通过以下方式给予支持：
-
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/tgrosinger?style=social)](https://github.com/sponsors/tgrosinger)
-[![Paypal](https://img.shields.io/badge/paypal-tgrosinger-yellow?style=social&logo=paypal)](https://paypal.me/tgrosinger)
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="100">](https://www.buymeacoffee.com/tgrosinger)

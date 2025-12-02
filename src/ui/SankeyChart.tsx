@@ -40,6 +40,7 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({ data, currencySymbol }
                 if (params.dataType === 'edge') {
                     return `${params.data.source} → ${params.data.target}<br/>${formatCurrency(params.data.value)}`;
                 }
+                // Show node name with tooltip for nodes
                 return `${params.name}`;
             },
         },
@@ -47,6 +48,10 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({ data, currencySymbol }
             {
                 type: 'sankey',
                 layout: 'none',
+                // Force alignment to justify - ensures perfect rectangular layout
+                nodeAlign: 'justify',
+                // Increase layout iterations for better optimization
+                layoutIterations: 64,
                 emphasis: {
                     focus: 'adjacency',
                 },
@@ -61,19 +66,34 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({ data, currencySymbol }
                     color: isDarkTheme ? '#dcddde' : '#2e3338',
                     fontSize: 12,
                 },
-                data: data.nodes.map((node) => ({
-                    name: node.name === 'Income' ? '总收入' : node.name,
-                    itemStyle: {
-                        color:
-                            node.id === 'Income'
-                                ? '#2ecc71'
-                                : node.id === 'Balance'
-                                    ? '#3498db'
-                                    : '#e74c3c',
-                    },
-                })),
+                data: data.nodes.map((node) => {
+                    // Color mapping based on node type
+                    let color: string;
+
+                    if (node.id === '结余') {
+                        // Savings/Surplus (right-side balance) - Deep teal/cyan
+                        color = '#059669'; // Represents asset accumulation
+                    } else if (node.id === '存量消耗') {
+                        // Supplement/Deficit (left-side balance) - Warning amber
+                        color = '#F59E0B'; // Represents drawing from reserves
+                    } else if (node.name.includes('收入') || node.name.includes('Income')) {
+                        // Income categories - Emerald green
+                        color = '#10B981';
+                    } else if (node.name.includes('支出') || node.name.includes('Expense')) {
+                        // Expense categories - Rose red/coral
+                        color = '#F43F5E';
+                    } else {
+                        // Default for uncategorized nodes - Gray
+                        color = '#6B7280';
+                    }
+
+                    return {
+                        name: node.name,
+                        itemStyle: { color },
+                    };
+                }),
                 links: data.links.map((link) => ({
-                    source: link.source === 'Income' ? '总收入' : link.source,
+                    source: link.source,
                     target: link.target,
                     value: link.value,
                 })),

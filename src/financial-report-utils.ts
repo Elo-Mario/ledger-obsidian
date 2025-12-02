@@ -506,7 +506,7 @@ export function getTransactionsWithAccounts(
             : 0;
 
         transactions.push({
-            date: window.moment(tx.value.date).format('MM-DD'),
+            date: window.moment(tx.value.date, ['YYYY-MM-DD', 'YYYY/MM/DD']).format('MM-DD'),
             payee: tx.value.payee,
             amount,
             sourceAccount,

@@ -88,7 +88,7 @@ export class DashboardDataService {
         let totalExpense = 0;
 
         const monthTransactions = this.txCache.transactions.filter((tx) => {
-            const txDate = window.moment(tx.value.date);
+            const txDate = window.moment(tx.value.date, ['YYYY-MM-DD', 'YYYY/MM/DD']);
             return txDate.isBetween(startOfMonth, endOfMonth, 'day', '[]');
         });
 
@@ -120,20 +120,23 @@ export class DashboardDataService {
     }
 
     /**
-     * Generate Sankey diagram data showing flow from income to expenses and balance
+     * Generate Sankey diagram data with accounting balance and descending sort
+     * 
+     * Algorithm:
+     * 1. Aggregate income and expense by second-level categories
+     * 2. Balance accounting: add "Savings" node (surplus) or "Supplement" node (deficit)
+     * 3. Sort nodes and links by value in descending order
      */
     public generateSankeyData(month: Moment): SankeyData {
         const startOfMonth = month.clone().startOf('month');
         const endOfMonth = month.clone().endOf('month');
 
-        const nodes: SankeyNode[] = [];
-        const links: SankeyLink[] = [];
-
-        let totalIncome = 0;
+        // Step 1: Aggregation
+        const incomeCategories = new Map<string, number>();
         const expenseCategories = new Map<string, number>();
 
         const monthTransactions = this.txCache.transactions.filter((tx) => {
-            const txDate = window.moment(tx.value.date);
+            const txDate = window.moment(tx.value.date, ['YYYY-MM-DD', 'YYYY/MM/DD']);
             return txDate.isBetween(startOfMonth, endOfMonth, 'day', '[]');
         });
 
@@ -142,45 +145,86 @@ export class DashboardDataService {
                 if (!('account' in line)) return;
 
                 const account = line.dealiasedAccount;
+                const parts = account.split(':');
+                const category = parts.length > 1 ? parts[1] : parts[0];
 
                 if (account.includes('Income') || account.includes('收入')) {
-                    totalIncome += Math.abs(line.amount);
+                    const current = incomeCategories.get(category) || 0;
+                    incomeCategories.set(category, current + Math.abs(line.amount));
                 } else if (account.includes('Expense') || account.includes('支出')) {
-                    // Extract second-level category (e.g., "支出:餐饮:外食" -> "餐饮")
-                    const parts = account.split(':');
-                    const category = parts.length > 1 ? parts[1] : parts[0];
-
                     const current = expenseCategories.get(category) || 0;
                     expenseCategories.set(category, current + line.amount);
                 }
             });
         });
 
-        // Create Income node
-        nodes.push({ id: 'Income', name: 'Income' });
+        const totalIncome = Array.from(incomeCategories.values()).reduce((sum, val) => sum + val, 0);
+        const totalExpense = Array.from(expenseCategories.values()).reduce((sum, val) => sum + val, 0);
 
-        // Create expense category nodes and links
-        let totalExpense = 0;
-        expenseCategories.forEach((amount, category) => {
-            nodes.push({ id: category, name: category });
-            links.push({
-                source: 'Income',
-                target: category,
+        // Step 2: Accounting Balancing
+        const delta = totalIncome - totalExpense;
+
+        if (delta >= 0) {
+            // Surplus: add "Savings" node to the right (target)
+            if (delta > 0) {
+                expenseCategories.set('结余', delta);
+            }
+        } else {
+            // Deficit: add "Supplement" node to the left (source)
+            incomeCategories.set('存量消耗', Math.abs(delta));
+        }
+
+        // Step 3: Build nodes with values for sorting
+        interface NodeWithValue extends SankeyNode {
+            value: number;
+        }
+
+        const nodesWithValue: NodeWithValue[] = [];
+        const links: SankeyLink[] = [];
+
+        // Create source nodes (income categories)
+        incomeCategories.forEach((amount, category) => {
+            nodesWithValue.push({
+                id: category,
+                name: category,
                 value: amount,
             });
-            totalExpense += amount;
         });
 
-        // Create Balance/Savings node if there's a positive balance
-        const balance = totalIncome - totalExpense;
-        if (balance > 0) {
-            nodes.push({ id: 'Balance', name: 'Balance' });
-            links.push({
-                source: 'Income',
-                target: 'Balance',
-                value: balance,
+        // Create target nodes (expense categories)
+        expenseCategories.forEach((amount, category) => {
+            nodesWithValue.push({
+                id: category,
+                name: category,
+                value: amount,
             });
-        }
+        });
+
+        // Create links from each income category to each expense category
+        // IMPORTANT: Recalculate total after balancing for correct ratio
+        const totalIncomeAfterBalance = Array.from(incomeCategories.values()).reduce((sum, val) => sum + val, 0);
+
+        incomeCategories.forEach((incomeAmount, incomeCategory) => {
+            const incomeRatio = totalIncomeAfterBalance > 0 ? incomeAmount / totalIncomeAfterBalance : 0;
+
+            expenseCategories.forEach((expenseAmount, expenseCategory) => {
+                const linkValue = expenseAmount * incomeRatio;
+                if (linkValue > 0) {
+                    links.push({
+                        source: incomeCategory,
+                        target: expenseCategory,
+                        value: linkValue,
+                    });
+                }
+            });
+        });
+
+        // Step 4: Global Sorting (descending by value)
+        nodesWithValue.sort((a, b) => b.value - a.value);
+        links.sort((a, b) => b.value - a.value);
+
+        // Convert nodes back to SankeyNode format (remove value field)
+        const nodes: SankeyNode[] = nodesWithValue.map(({ id, name }) => ({ id, name }));
 
         return { nodes, links };
     }

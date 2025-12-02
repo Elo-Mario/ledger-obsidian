@@ -122,13 +122,13 @@ export class ReconcileModal extends Modal {
 
             // Show success message
             new Notice(
-                `对账完成，共 ${selectedTxs.length} 笔交易`,
+                `流水核对完成，共 ${selectedTxs.length} 笔交易`,
             );
 
             this.close();
         } catch (error) {
             console.error('Reconciliation failed:', error);
-            new Notice('对账失败，请查看控制台');
+            new Notice('流水核对失败，请查看控制台');
         }
     };
 

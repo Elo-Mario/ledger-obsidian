@@ -143,7 +143,7 @@ const DesktopDashboard: React.FC<{
                   width: '100%',
                 }}
               >
-                对账
+                流水核对
               </button>
               <button
                 onClick={() => setShowReport(true)}

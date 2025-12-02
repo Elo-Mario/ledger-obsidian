@@ -34,7 +34,7 @@ export class LedgerView extends TextFileView {
       );
     });
 
-    this.redraw();
+    this.createDashboard();
   }
 
   public canAcceptExtension(extension: string): boolean {
@@ -53,42 +53,32 @@ export class LedgerView extends TextFileView {
     return 'ledger';
   }
 
-  public getViewData(): string {
-    console.debug('Ledger: returning view data');
+  public getViewData = (): string => {
     return this.data;
   }
 
   public setViewData(data: string, clear: boolean): void {
-    console.debug('Ledger: setting view data');
-
     // TODO: Update the txCache and call redraw()
 
     // TODO: This might not tell me about all file modify events
   }
 
-  public clear(): void {
-    console.debug('Ledger: clearing view');
+  public clear = (): void => {
   }
 
-  public onload(): void {
-    console.debug('Ledger: loading dashboard');
-    this.plugin.registerTxCacheSubscription(this.handleTxCacheUpdate);
+  protected async onOpen(): Promise<void> {
+    this.plugin.registerTxCacheSubscription(this.updateDashboard);
   }
 
-  public onunload(): void {
-    console.debug('Ledger: unloading dashboard');
-    this.plugin.deregisterTxCacheSubscription(this.handleTxCacheUpdate);
+  protected async onClose(): Promise<void> {
+    this.plugin.deregisterTxCacheSubscription(this.updateDashboard);
   }
 
   public async onLoadFile(file: TFile): Promise<void> {
-    console.debug('Ledger: File being loaded: ' + file.path);
     if (file.path === this.plugin.settings.ledgerFile) {
       this.txCache = this.plugin.txCache;
     } else {
       // TODO: Setup a file watch for modifications while this file is open.
-      console.debug(
-        'Ledger: Generating txCache for other Ledger file: ' + file.path,
-      );
       this.txCache = await getTransactionCache(
         this.plugin.app.metadataCache,
         this.plugin.app.vault,
@@ -100,19 +90,16 @@ export class LedgerView extends TextFileView {
     if (this.currentFilePath !== file.path) {
       this.currentFilePath = file.path;
       this.updateInterface = new LedgerModifier(this.plugin, file);
-      this.redraw();
+      this.createDashboard();
     }
   }
 
   public async onUnloadFile(file: TFile): Promise<void> {
-    console.debug('Ledger: File being unloaded: ' + file.path);
     // TODO: Use this to persist any changes that need to be saved.
     // TODO: Tear down the file watch if this is a non-default file.
   }
 
-  public readonly redraw = (): void => {
-    console.debug('Ledger: Creating dashboard view');
-
+  private readonly createDashboard = (): void => {
     const contentEl = this.containerEl.children[1];
 
     if (this.currentFilePath && this.updateInterface) {
@@ -133,15 +120,14 @@ export class LedgerView extends TextFileView {
 
 
 
-  private readonly handleTxCacheUpdate = (txCache: TransactionCache): void => {
-    console.debug('Ledger: received an updated txCache for dashboard');
+  private readonly updateDashboard = (txCache: TransactionCache): void => {
     this.txCache = txCache;
 
     // The plugin only monitors the ledger file for changes, so we will only be
     // notified for that file. If we are viewing a different file currently then
     // we should not redraw for this event.
     if (this.currentFilePath === this.plugin.settings.ledgerFile) {
-      this.redraw();
+      this.createDashboard();
     }
   };
 

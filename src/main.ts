@@ -114,7 +114,7 @@ export default class LedgerPlugin extends Plugin {
 
     this.addCommand({
       id: 'ledger-reconcile',
-      name: 't:Reconcile Transactions',
+      name: '流水核对',
       icon: 'check-circle',
       callback: () => {
         new ReconcileModal(this).open();
@@ -243,7 +243,6 @@ ${window.moment().format('YYYY-MM-DD')} Starting Balances
    * be replaced. Subscriptions will be notified with the new txCache.
    */
   private readonly updateTransactionCache = async (): Promise<void> => {
-    console.debug('ledger: Updating the transaction cache');
     this.txCache = await getTransactionCache(
       this.app.metadataCache,
       this.app.vault,

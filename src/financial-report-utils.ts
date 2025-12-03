@@ -516,3 +516,106 @@ export function getTransactionsWithAccounts(
 
     return transactions;
 }
+
+/**
+ * 构建层级树形结构
+ */
+export function buildHierarchy(balances: Map<string, number>): TreemapNode[] {
+    const root: TreemapNode[] = [];
+
+    // Helper to find or create a node
+    function findOrCreateNode(path: string[], parentChildren: TreemapNode[]): TreemapNode {
+        const name = path[0];
+        let node = parentChildren.find(n => n.name === name);
+
+        if (!node) {
+            node = {
+                name,
+                value: 0,
+                children: []
+            };
+            parentChildren.push(node);
+        }
+
+        if (path.length > 1) {
+            // Need to ensure children array exists
+            if (!node.children) node.children = [];
+            return findOrCreateNode(path.slice(1), node.children);
+        }
+
+        return node;
+    }
+
+    balances.forEach((value, account) => {
+        if (value === 0) return;
+        const parts = account.split(':');
+        // Skip the first part (Asset/Liability) as we are building the tree INSIDE that category
+        const meaningfulParts = parts.slice(1); // Remove 'Assets' or 'Liabilities' prefix
+        if (meaningfulParts.length === 0) return;
+
+        const leaf = findOrCreateNode(meaningfulParts, root);
+        leaf.value += value;
+    });
+
+    // Recalculate values for non-leaf nodes
+    function sumValues(nodes: TreemapNode[]): number {
+        let total = 0;
+        nodes.forEach(node => {
+            if (node.children && node.children.length > 0) {
+                node.value = sumValues(node.children);
+            }
+            total += node.value;
+        });
+        return total;
+    }
+
+    sumValues(root);
+    return root;
+}
+
+/**
+ * 计算双矩形树图数据 (Assets & Liabilities)
+ * 截止到指定月份月末（或当前日期）
+ */
+export function calculateDualTreemapData(
+    txCache: TransactionCache,
+    month: Moment,
+): { assets: TreemapNode[], liabilities: TreemapNode[] } {
+    // Determine cutoff date
+    const now = window.moment();
+    const endOfMonth = month.clone().endOf('month');
+    // If endOfMonth is after NOW, use NOW.
+    const cutoffDate = endOfMonth.isAfter(now) ? now : endOfMonth;
+
+    const accountBalances = new Map<string, number>();
+
+    txCache.transactions.forEach((tx) => {
+        const txDate = window.moment(tx.value.date, ['YYYY-MM-DD', 'YYYY/MM/DD']);
+        if (txDate.isAfter(cutoffDate)) return;
+
+        tx.value.expenselines.forEach((line) => {
+            if (!('account' in line)) return;
+            const account = line.dealiasedAccount;
+            const current = accountBalances.get(account) || 0;
+            accountBalances.set(account, current + line.amount);
+        });
+    });
+
+    const assetBalances = new Map<string, number>();
+    const liabilityBalances = new Map<string, number>();
+
+    accountBalances.forEach((balance, account) => {
+        if (Math.abs(balance) < 0.01) return; // Ignore zero/dust
+
+        if (account.startsWith('Assets') || account.startsWith('资产')) {
+            assetBalances.set(account, Math.abs(balance)); // Assets are usually positive
+        } else if (account.startsWith('Liabilities') || account.startsWith('负债')) {
+            liabilityBalances.set(account, Math.abs(balance)); // Liabilities are negative in Ledger, take abs
+        }
+    });
+
+    return {
+        assets: buildHierarchy(assetBalances),
+        liabilities: buildHierarchy(liabilityBalances)
+    };
+}

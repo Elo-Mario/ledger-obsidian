@@ -5,6 +5,7 @@ import {
     makeDailyAccountBalanceChangeMap,
     makeDailyBalanceMap,
 } from './balance-utils';
+import { calculateDualTreemapData } from './financial-report-utils';
 
 /**
  * KPI data for a given month
@@ -351,5 +352,12 @@ export class DashboardDataService {
         }
 
         return { dailyIncome, dailyExpense };
+    }
+
+    /**
+     * Generate dual treemap data for assets and liabilities
+     */
+    public generateDualTreemapData(month: Moment) {
+        return calculateDualTreemapData(this.txCache, month);
     }
 }

@@ -2,6 +2,7 @@ import type { SankeyData } from '../DashboardDataService';
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import styled from 'styled-components';
+import { getChartColors, observeThemeChange } from '../theme-utils';
 
 const ChartContainer = styled.div`
   width: 100%;
@@ -23,7 +24,15 @@ interface SankeyChartProps {
 }
 
 export const SankeyChart: React.FC<SankeyChartProps> = ({ data, currencySymbol }) => {
-    const isDarkTheme = document.body.classList.contains('theme-dark');
+    const [refreshKey, setRefreshKey] = React.useState(0);
+
+    // Listen for theme changes
+    React.useEffect(() => {
+        const cleanup = observeThemeChange(() => {
+            setRefreshKey(prev => prev + 1); // Force re-render
+        });
+        return cleanup;
+    }, []);
 
     const formatCurrency = (amount: number): string => {
         return `${currencySymbol}${Math.abs(amount).toLocaleString('zh-CN', {
@@ -48,43 +57,57 @@ export const SankeyChart: React.FC<SankeyChartProps> = ({ data, currencySymbol }
             {
                 type: 'sankey',
                 layout: 'none',
-                // Force alignment to justify - ensures perfect rectangular layout
                 nodeAlign: 'justify',
-                // Increase layout iterations for better optimization
                 layoutIterations: 64,
                 emphasis: {
                     focus: 'adjacency',
                 },
+                // ✅ 对称布局：左右接近对称，右侧稍宽以容纳标签
+                left: '4%',
+                top: '5%',
+                right: '8%',     // 右侧8%，与左侧4%接近对称
+                bottom: '5%',
+                nodeWidth: 20,
+                nodeGap: 10,
                 lineStyle: {
-                    color: 'gradient',
+                    color: 'gradient',  // 渐变连线
                     curveness: 0.5,
+                    opacity: 0.4,
                 },
                 itemStyle: {
                     borderWidth: 0,
                 },
                 label: {
-                    color: isDarkTheme ? '#dcddde' : '#2e3338',
+                    show: true,
+                    position: 'right',
+                    distance: 5,      // ✅ 紧凑标签间距
+                    color: getChartColors().text,
                     fontSize: 12,
                 },
                 data: data.nodes.map((node) => {
-                    // Color mapping based on node type
-                    let color: string;
+                    // ✅ 颜色逻辑：使用includes宽松匹配
+                    let color = '#9CA3AF';  // 默认灰色
 
-                    if (node.id === '结余') {
-                        // Savings/Surplus (right-side balance) - Deep teal/cyan
-                        color = '#059669'; // Represents asset accumulation
-                    } else if (node.id === '存量消耗') {
-                        // Supplement/Deficit (left-side balance) - Warning amber
-                        color = '#F59E0B'; // Represents drawing from reserves
-                    } else if (node.name.includes('收入') || node.name.includes('Income')) {
-                        // Income categories - Emerald green
-                        color = '#10B981';
-                    } else if (node.name.includes('支出') || node.name.includes('Expense')) {
-                        // Expense categories - Rose red/coral
-                        color = '#F43F5E';
-                    } else {
-                        // Default for uncategorized nodes - Gray
-                        color = '#6B7280';
+                    const name = node.name || '';
+
+                    // 左侧逻辑
+                    if (name.includes('收入') || name.includes('Income')) {
+                        color = '#10B981';  // 翡翠绿
+                    } else if (name.includes('负债') || name.includes('存量消耗')) {
+                        color = '#F43F5E';  // 红色
+                    } else if (name.includes('余额消费')) {
+                        color = '#3B82F6';  // 蓝色
+                    }
+                    // 右侧逻辑 - 所有支出类别变绿
+                    else if (name.includes('支出') || name.includes('Expense') ||
+                        name.includes('保障') || name.includes('餐饮') ||
+                        name.includes('购物') || name.includes('通讯') ||
+                        name.includes('交通') || name.includes('娱乐') ||
+                        name.includes('教育') || name.includes('医疗') ||
+                        name.includes('居住') || name.includes('其他')) {
+                        color = '#34D399';  // 草绿色（支出）
+                    } else if (name.includes('结余') || name.includes('沉淀') || name.includes('Savings')) {
+                        color = '#059669';  // 深绿色（结余）
                     }
 
                     return {

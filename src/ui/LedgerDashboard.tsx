@@ -93,7 +93,7 @@ const DesktopDashboard: React.FC<{
     window.moment().subtract(2, 'months'),
   );
   const [endDate, setEndDate] = React.useState(window.moment());
-  const [interval, setInterval] = React.useState<Interval>('week');
+  const [interval, setInterval] = React.useState<Interval>('day');
   const [showReport, setShowReport] = React.useState(false);
 
   if (showReport) {
@@ -102,6 +102,7 @@ const DesktopDashboard: React.FC<{
         txCache={props.txCache}
         settings={props.settings}
         updater={props.updater}
+        onBack={() => setShowReport(false)}
       />
     );
   }

@@ -3,6 +3,7 @@ import * as echarts from 'echarts';
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import styled from 'styled-components';
+import { getChartColors, observeThemeChange } from '../theme-utils';
 
 const ChartContainer = styled.div`
   width: 100%;
@@ -24,7 +25,15 @@ interface TrendChartProps {
 }
 
 export const TrendChart: React.FC<TrendChartProps> = ({ data, currencySymbol }) => {
-    const isDarkTheme = document.body.classList.contains('theme-dark');
+    const [refreshKey, setRefreshKey] = React.useState(0);
+
+    // Listen for theme changes
+    React.useEffect(() => {
+        const cleanup = observeThemeChange(() => {
+            setRefreshKey(prev => prev + 1); // Force re-render
+        });
+        return cleanup;
+    }, []);
 
     const formatCurrency = (amount: number): string => {
         return `${currencySymbol}${Math.abs(amount).toLocaleString('zh-CN', {
@@ -71,7 +80,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, currencySymbol }) 
             top: 'top',
             left: 'center',
             textStyle: {
-                color: isDarkTheme ? '#dcddde' : '#2e3338',
+                color: getChartColors().text,  // Dynamic color
             },
         },
         grid: {
@@ -88,11 +97,11 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, currencySymbol }) 
                     type: 'shadow',
                 },
                 axisLabel: {
-                    color: isDarkTheme ? '#dcddde' : '#2e3338',
+                    color: getChartColors().text,  // Dynamic color
                 },
                 axisLine: {
                     lineStyle: {
-                        color: isDarkTheme ? '#42464d' : '#ccc',
+                        color: getChartColors().axis,  // Dynamic color
                     },
                 },
             },
@@ -101,31 +110,37 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data, currencySymbol }) 
             {
                 type: 'value',
                 name: '金额',
+                nameTextStyle: {
+                    color: getChartColors().text,  // Dynamic color
+                },
                 axisLabel: {
                     formatter: (value: number) => formatCurrency(value),
-                    color: isDarkTheme ? '#dcddde' : '#2e3338',
+                    color: getChartColors().text,  // Dynamic color
                 },
                 axisLine: {
                     lineStyle: {
-                        color: isDarkTheme ? '#42464d' : '#ccc',
+                        color: getChartColors().axis,  // Dynamic color
                     },
                 },
                 splitLine: {
                     lineStyle: {
-                        color: isDarkTheme ? '#42464d' : '#eee',
+                        color: getChartColors().split,  // Dynamic color
                     },
                 },
             },
             {
                 type: 'value',
                 name: '结余',
+                nameTextStyle: {
+                    color: getChartColors().text,  // Dynamic color
+                },
                 axisLabel: {
                     formatter: (value: number) => formatCurrency(value),
-                    color: isDarkTheme ? '#dcddde' : '#2e3338',
+                    color: getChartColors().text,  // Dynamic color
                 },
                 axisLine: {
                     lineStyle: {
-                        color: isDarkTheme ? '#42464d' : '#ccc',
+                        color: getChartColors().axis,  // Dynamic color
                     },
                 },
                 splitLine: {

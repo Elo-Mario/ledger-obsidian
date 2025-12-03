@@ -4,6 +4,7 @@ import type { ISettings } from '../settings';
 import { KPICards } from './KPICards';
 import { MonthSelector } from './MonthSelector';
 import { SankeyChart } from './SankeyChart';
+import { DualTreemap } from './DualTreemap';
 import { TransactionTablePaginated } from './TransactionTablePaginated';
 import { TrendChart } from './TrendChart';
 import React from 'react';
@@ -31,12 +32,14 @@ interface FinancialReportProps {
   txCache: TransactionCache;
   settings: ISettings;
   updater: LedgerModifier;
+  onBack?: () => void;
 }
 
 export const FinancialReport: React.FC<FinancialReportProps> = ({
   txCache,
   settings,
   updater,
+  onBack,
 }) => {
   const [selectedMonth, setSelectedMonth] = React.useState(window.moment());
 
@@ -87,6 +90,11 @@ export const FinancialReport: React.FC<FinancialReportProps> = ({
     [dataService, selectedMonth],
   );
 
+  const dualTreemapData = React.useMemo(
+    () => dataService.generateDualTreemapData(selectedMonth),
+    [dataService, selectedMonth],
+  );
+
   // 交易明细
   const transactions = React.useMemo(
     () => getTransactionsWithAccounts(txCache, selectedMonth),
@@ -100,6 +108,7 @@ export const FinancialReport: React.FC<FinancialReportProps> = ({
         onMonthChange={setSelectedMonth}
         canGoPrev={canGoPrev}
         canGoNext={canGoNext}
+        onBack={onBack}
       />
 
       <KPICards data={kpiData} currencySymbol={settings.currencySymbol} />
@@ -108,6 +117,12 @@ export const FinancialReport: React.FC<FinancialReportProps> = ({
         <SankeyChart data={sankeyData} currencySymbol={settings.currencySymbol} />
         <TrendChart data={trendData} currencySymbol={settings.currencySymbol} />
       </ChartsRow>
+
+      <DualTreemap
+        assetsData={dualTreemapData.assets}
+        liabilitiesData={dualTreemapData.liabilities}
+        currencySymbol={settings.currencySymbol}
+      />
 
       <TransactionTablePaginated
         transactions={transactions}

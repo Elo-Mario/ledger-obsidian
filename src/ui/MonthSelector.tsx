@@ -54,6 +54,7 @@ interface MonthSelectorProps {
     onMonthChange: (month: Moment) => void;
     canGoPrev: boolean;
     canGoNext: boolean;
+    onBack?: () => void;
 }
 
 export const MonthSelector: React.FC<MonthSelectorProps> = ({
@@ -61,6 +62,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
     onMonthChange,
     canGoPrev,
     canGoNext,
+    onBack,
 }) => {
     const handlePrevMonth = () => {
         if (canGoPrev) {
@@ -78,13 +80,18 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
         <Container>
             <Title>财务报表</Title>
             <Controls>
+                {onBack && (
+                    <Button disabled={false} onClick={onBack}>
+                        返回账本
+                    </Button>
+                )}
                 <Button disabled={!canGoPrev} onClick={handlePrevMonth}>
                     ← 上个月
                 </Button>
                 <MonthDisplay>{selectedMonth.format('YYYY年MM月')}</MonthDisplay>
                 <Button disabled={!canGoNext} onClick={handleNextMonth}>
                     下个月 →
-                </Button>-
+                </Button>
             </Controls>
         </Container>
     );
